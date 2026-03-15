@@ -1,0 +1,19 @@
+# Build output
+dist/
+
+# Dependencies
+node_modules/
+
+# Documentation
+docs/
+
+# Test files
+test-standalone.ts
+
+# IDE
+.claude/
+
+# Misc
+TODO.md
+*.log
+.DS_Store

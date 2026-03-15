@@ -1,0 +1,137 @@
+{
+  "id": "mcp-tool-bridge",
+  "name": "MCP Tool Bridge",
+  "description": "Bridges MCP server tools as native OpenClaw tools, enabling direct AI invocation without skill or mcporter intermediaries.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "servers": {
+        "type": "array",
+        "default": [],
+        "description": "List of MCP servers to connect",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Unique name for this MCP server"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["stdio", "sse", "streamableHttp"],
+              "description": "Transport type for the MCP server"
+            },
+            "command": {
+              "type": "string",
+              "description": "Command to run (for stdio transport)"
+            },
+            "args": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Arguments for the command"
+            },
+            "env": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Environment variables"
+            },
+            "url": {
+              "type": "string",
+              "description": "Server URL (for sse/streamableHttp transport)"
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "HTTP headers (for streamableHttp transport)"
+            },
+            "enabled": {
+              "type": "boolean",
+              "description": "Whether this server is enabled (default: true)"
+            },
+            "toolPrefix": {
+              "type": "string",
+              "description": "Optional prefix for tool names (e.g., 'web_' -> 'web_search')"
+            },
+            "toolFilter": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Optional list of tool names to include (all if empty)"
+            }
+          },
+          "required": ["name", "type"]
+        }
+      },
+      "autoReconnect": {
+        "type": "boolean",
+        "description": "Automatically reconnect to MCP servers on disconnect (default: true)"
+      },
+      "reconnectDelayMs": {
+        "type": "number",
+        "description": "Delay before reconnecting in milliseconds (default: 5000)"
+      },
+      "toolCallTimeoutMs": {
+        "type": "number",
+        "description": "Timeout for tool calls in milliseconds (default: 60000)"
+      }
+    },
+    "required": []
+  },
+  "uiHints": {
+    "servers": {
+      "label": "MCP Servers",
+      "help": "Configure MCP servers to bridge their tools into OpenClaw"
+    },
+    "servers.name": {
+      "label": "Server Name",
+      "help": "Unique identifier for this MCP server"
+    },
+    "servers.type": {
+      "label": "Type",
+      "help": "Transport type: stdio (local process), sse (legacy HTTP), streamableHttp (recommended)"
+    },
+    "servers.command": {
+      "label": "Command",
+      "help": "Executable command for stdio transport (e.g., 'node', 'uv', 'python')"
+    },
+    "servers.args": {
+      "label": "Arguments",
+      "help": "Command line arguments"
+    },
+    "servers.url": {
+      "label": "URL",
+      "help": "Server URL for sse/streamableHttp transport"
+    },
+    "servers.headers": {
+      "label": "Headers",
+      "help": "HTTP headers for streamableHttp transport (e.g., Authorization: Bearer xxx)"
+    },
+    "servers.enabled": {
+      "label": "Enabled",
+      "help": "Enable or disable this server"
+    },
+    "servers.toolPrefix": {
+      "label": "Tool Prefix",
+      "help": "Prefix to add to tool names (e.g., 'web_' makes 'search' become 'web_search')"
+    },
+    "servers.toolFilter": {
+      "label": "Tool Filter",
+      "help": "Only include these tools (leave empty for all tools)"
+    },
+    "autoReconnect": {
+      "label": "Auto Reconnect",
+      "help": "Automatically reconnect if connection is lost",
+      "advanced": true
+    },
+    "reconnectDelayMs": {
+      "label": "Reconnect Delay (ms)",
+      "help": "Milliseconds to wait before reconnecting",
+      "advanced": true
+    },
+    "toolCallTimeoutMs": {
+      "label": "Tool Call Timeout (ms)",
+      "help": "Maximum time to wait for a tool response",
+      "advanced": true
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@openclaw/mcp-tool-bridge",
+  "version": "26.3.15",
+  "private": true,
+  "description": "OpenClaw plugin to bridge MCP server tools as native OpenClaw tools",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@sinclair/typebox": "^0.34.48"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
