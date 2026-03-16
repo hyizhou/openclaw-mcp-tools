@@ -31,9 +31,10 @@ declare module "openclaw/plugin-sdk" {
 
   export interface OpenClawToolDefinition {
     name: string;
+    label?: string;
     description: string;
-    inputSchema: OpenClawToolInputSchema | Record<string, unknown>;
-    handler: (args: Record<string, unknown>, context: OpenClawToolContext) => Promise<OpenClawToolResult>;
+    parameters: OpenClawToolInputSchema | Record<string, unknown>;
+    execute: (toolCallId: string, args: Record<string, unknown>, signal: AbortSignal | undefined, onUpdate: unknown) => Promise<OpenClawToolResult>;
   }
 
   export interface OpenClawToolContext {

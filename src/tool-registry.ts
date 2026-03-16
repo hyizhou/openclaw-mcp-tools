@@ -33,8 +33,8 @@ export class ToolRegistry {
     toolDefinition: {
       name: string;
       description: string;
-      inputSchema: Record<string, unknown>;
-      handler: (args: Record<string, unknown>, context: unknown) => Promise<McpToolCallResult>;
+      parameters: Record<string, unknown>;
+      execute: (toolCallId: string, args: Record<string, unknown>, signal: AbortSignal | undefined, onUpdate: unknown) => Promise<McpToolCallResult>;
     };
   }> {
     const tools = this.clientManager.getAllTools();
@@ -43,8 +43,8 @@ export class ToolRegistry {
       toolDefinition: {
         name: string;
         description: string;
-        inputSchema: Record<string, unknown>;
-        handler: (args: Record<string, unknown>, context: unknown) => Promise<McpToolCallResult>;
+        parameters: Record<string, unknown>;
+        execute: (toolCallId: string, args: Record<string, unknown>, signal: AbortSignal | undefined, onUpdate: unknown) => Promise<McpToolCallResult>;
       };
     }> = [];
 
@@ -68,13 +68,13 @@ export class ToolRegistry {
   private createToolDefinition(toolInfo: McpToolInfo): {
     name: string;
     description: string;
-    inputSchema: Record<string, unknown>;
-    handler: (args: Record<string, unknown>, context: unknown) => Promise<McpToolCallResult>;
+    parameters: Record<string, unknown>;
+    execute: (toolCallId: string, args: Record<string, unknown>, signal: AbortSignal | undefined, onUpdate: unknown) => Promise<McpToolCallResult>;
   } {
     const { serverName, originalName, registeredName, definition } = toolInfo;
 
-    // Use MCP inputSchema directly (it's already JSON Schema)
-    const inputSchema = definition.inputSchema as Record<string, unknown> ?? {
+    // Use MCP inputSchema as parameters (it's already JSON Schema)
+    const parameters = definition.inputSchema as Record<string, unknown> ?? {
       type: "object",
       properties: {},
     };
@@ -88,8 +88,8 @@ export class ToolRegistry {
     return {
       name: registeredName,
       description,
-      inputSchema,
-      handler: async (args: Record<string, unknown>, _context: unknown) => {
+      parameters,
+      execute: async (_toolCallId: string, args: Record<string, unknown>, _signal: AbortSignal | undefined, _onUpdate: unknown) => {
         return this.executeToolCall(serverName, originalName, args);
       },
     };

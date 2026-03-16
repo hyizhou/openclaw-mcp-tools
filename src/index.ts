@@ -79,8 +79,8 @@ const mcpToolBridgePlugin = {
             api.registerTool({
               name: toolDefinition.name,
               description: toolDefinition.description,
-              inputSchema: toolDefinition.inputSchema,
-              handler: toolDefinition.handler,
+              parameters: toolDefinition.parameters,
+              execute: toolDefinition.execute,
             });
           } catch (error) {
             ctx.logger.error(
