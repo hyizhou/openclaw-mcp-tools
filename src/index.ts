@@ -12,11 +12,57 @@ import type { McpToolBridgeConfig, McpServerConfig } from "./types.js";
 import { DEFAULT_CONFIG } from "./types.js";
 
 // ============================================================================
-// Plugin Definition
+// Types (inline to avoid import issues)
+// ============================================================================
+
+/**
+ * Tool definition compatible with OpenClaw's AnyAgentTool
+ */
+interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  execute: (
+    toolCallId: string,
+    args: Record<string, unknown>,
+    signal: AbortSignal | undefined,
+    onUpdate: unknown
+  ) => Promise<unknown>;
+}
+
+/**
+ * Context passed to tool factory (subset of OpenClawPluginToolContext)
+ */
+interface ToolContext {
+  config?: unknown;
+  workspaceDir?: string;
+  agentDir?: string;
+  agentId?: string;
+  sessionKey?: string;
+  sessionId?: string;
+  messageChannel?: string;
+  agentAccountId?: string;
+  requesterSenderId?: string;
+  senderIsOwner?: boolean;
+  sandboxed?: boolean;
+}
+
+// ============================================================================
+// Plugin State
 // ============================================================================
 
 let clientManager: McpClientManager | null = null;
 let toolRegistry: ToolRegistry | null = null;
+let initPromise: Promise<void> | null = null;
+
+// IMPORTANT: register() may be called multiple times by loadOpenClawPlugins()
+// when the plugin registry cache is invalidated. clientManager/toolRegistry
+// are guarded to prevent overwriting established MCP connections.
+// Service is registered on every call so each registry has its own entry.
+
+// ============================================================================
+// Plugin Definition
+// ============================================================================
 
 const mcpToolBridgePlugin = {
   id: "mcp-tool-bridge",
@@ -38,82 +84,55 @@ const mcpToolBridgePlugin = {
       return;
     }
 
-    // Initialize client manager
-    clientManager = new McpClientManager(api.logger, {
-      autoReconnect: config.autoReconnect,
-      reconnectDelayMs: config.reconnectDelayMs,
-    });
+    // Only initialize clientManager/toolRegistry once per process.
+    // Subsequent register() calls must NOT overwrite these, otherwise
+    // MCP connections established by service.start() are lost.
+    if (!clientManager) {
+      clientManager = new McpClientManager(api.logger, {
+        autoReconnect: config.autoReconnect,
+        reconnectDelayMs: config.reconnectDelayMs,
+      });
 
-    // Initialize tool registry
-    toolRegistry = new ToolRegistry(clientManager, api.logger, {
-      toolCallTimeoutMs: config.toolCallTimeoutMs,
-    });
+      toolRegistry = new ToolRegistry(clientManager, api.logger, {
+        toolCallTimeoutMs: config.toolCallTimeoutMs,
+      });
 
-    api.logger.info(`mcp-tool-bridge: initializing with ${config.servers.length} server(s)`);
+      api.logger.info(`mcp-tool-bridge: initializing with ${config.servers.length} server(s)`);
+    }
 
-    // Register service for lifecycle management (async start)
+    // Register tool factory function.
+    // The factory is called each time tools are resolved, returning
+    // currently available tools based on MCP connection status.
+    // Use type assertion to bypass compile-time type check since openclaw types
+    // may not be fully resolved during standalone plugin compilation.
+    const toolFactory = (_context: ToolContext): ToolDefinition[] | undefined => {
+      return getAvailableTools(api.logger);
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    api.registerTool(toolFactory as any);
+
+    // Register service for lifecycle management (async start).
+    // Each registry needs its own service registration so that
+    // startPluginServices() can find and start it.
     api.registerService({
       id: "mcp-tool-bridge",
       start: async (ctx) => {
-        // Connect to all enabled servers
-        const enabledServers = config.servers.filter((s) => s.enabled !== false);
+        // Start MCP connections
+        initPromise = connectToMcpServers(config, ctx.logger);
 
-        for (const serverConfig of enabledServers) {
-          try {
-            await clientManager!.connect(serverConfig);
-          } catch (error) {
-            ctx.logger.error(
-              `mcp-tool-bridge: failed to connect to "${serverConfig.name}": ${String(error)}`
-            );
-          }
+        // Wait for initial connections with a timeout
+        // Tools will become available as connections are established
+        try {
+          await Promise.race([
+            initPromise,
+            new Promise<void>((resolve) => setTimeout(resolve, 10000)),
+          ]);
+        } catch (error) {
+          ctx.logger.error(`mcp-tool-bridge: initial connection error: ${String(error)}`);
         }
 
-        // Get connections AFTER connecting
-        const connections = clientManager!.getConnections();
-
-        // Register all tools from connected servers
-        const toolDefinitions = toolRegistry!.createToolDefinitions();
-
-        for (const { toolInfo, toolDefinition } of toolDefinitions) {
-          try {
-            api.registerTool({
-              name: toolDefinition.name,
-              description: toolDefinition.description,
-              parameters: toolDefinition.parameters,
-              execute: toolDefinition.execute,
-            });
-          } catch (error) {
-            ctx.logger.error(
-              `mcp-tool-bridge: failed to register tool "${toolInfo.registeredName}": ${String(error)}`
-            );
-          }
-        }
-
-        // Print summary
-        ctx.logger.info("=== MCP Tool Bridge 状态 ===");
-        ctx.logger.info(`  已配置服务器: ${config.servers.length}`);
-        ctx.logger.info(`  已连接服务器: ${connections.size}`);
-        ctx.logger.info(`  已注册工具: ${toolDefinitions.length}`);
-
-        if (connections.size > 0) {
-          ctx.logger.info("  --- 已加载工具 ---");
-          for (const [serverName, conn] of connections) {
-            ctx.logger.info(`  [${serverName}] (${conn.tools.length} 个工具)`);
-            for (const tool of conn.tools) {
-              ctx.logger.info(`    • ${tool.registeredName}`);
-            }
-          }
-        }
-
-        if (connections.size < enabledServers.length) {
-          ctx.logger.info("  --- 连接失败 ---");
-          for (const serverConfig of enabledServers) {
-            if (!connections.has(serverConfig.name)) {
-              ctx.logger.info(`    ✗ ${serverConfig.name}`);
-            }
-          }
-        }
-        ctx.logger.info("=========================");
+        // Print status after initial connection attempt
+        printStatus(config, ctx.logger);
       },
       stop: async (ctx) => {
         ctx.logger.info("mcp-tool-bridge: service stopping...");
@@ -125,13 +144,110 @@ const mcpToolBridgePlugin = {
         }
       },
     });
-
-    // Register hook for session end cleanup
-    api.on("session_end", async (_event, _ctx) => {
-      // Optionally cleanup on session end
-      // For now, we keep connections alive across sessions
-    });
   },
 };
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Connect to all enabled MCP servers
+ */
+async function connectToMcpServers(
+  config: McpToolBridgeConfig,
+  logger: OpenClawPluginApi["logger"]
+): Promise<void> {
+  const enabledServers = config.servers.filter((s) => s.enabled !== false);
+
+  for (const serverConfig of enabledServers) {
+    try {
+      await clientManager!.connect(serverConfig);
+      logger.info(`mcp-tool-bridge: connected to "${serverConfig.name}"`);
+    } catch (error) {
+      logger.error(
+        `mcp-tool-bridge: failed to connect to "${serverConfig.name}": ${String(error)}`
+      );
+    }
+  }
+}
+
+/**
+ * Get currently available tools from connected MCP servers.
+ * Called each time the tool factory is invoked.
+ */
+function getAvailableTools(logger: OpenClawPluginApi["logger"]): ToolDefinition[] {
+  if (!toolRegistry || !clientManager) {
+    logger.warn("mcp-tool-bridge: toolRegistry or clientManager not initialized");
+    return [];
+  }
+
+  const connections = clientManager.getConnections();
+  if (connections.size === 0) {
+    logger.debug?.("mcp-tool-bridge: no MCP connections available yet");
+    return [];
+  }
+
+  const tools: ToolDefinition[] = [];
+  const toolDefinitions = toolRegistry.createToolDefinitions();
+
+  for (const { toolInfo, toolDefinition } of toolDefinitions) {
+    try {
+      tools.push({
+        name: toolDefinition.name,
+        description: toolDefinition.description,
+        parameters: toolDefinition.parameters,
+        execute: toolDefinition.execute,
+      });
+    } catch (error) {
+      logger.error(
+        `mcp-tool-bridge: failed to create tool "${toolInfo.registeredName}": ${String(error)}`
+      );
+    }
+  }
+
+  logger.info(`mcp-tool-bridge: returning ${tools.length} tools`);
+  return tools;
+}
+
+/**
+ * Print connection status summary
+ */
+function printStatus(
+  config: McpToolBridgeConfig,
+  logger: OpenClawPluginApi["logger"]
+): void {
+  const connections = clientManager?.getConnections() ?? new Map();
+  const enabledServers = config.servers.filter((s) => s.enabled !== false);
+  const totalTools = Array.from(connections.values()).reduce(
+    (sum, conn) => sum + conn.tools.length,
+    0
+  );
+
+  logger.info("=== MCP Tool Bridge 状态 ===");
+  logger.info(`  已配置服务器: ${config.servers.length}`);
+  logger.info(`  已连接服务器: ${connections.size}`);
+  logger.info(`  可用工具: ${totalTools}`);
+
+  if (connections.size > 0) {
+    logger.info("  --- 已加载工具 ---");
+    for (const [serverName, conn] of connections) {
+      logger.info(`  [${serverName}] (${conn.tools.length} 个工具)`);
+      for (const tool of conn.tools) {
+        logger.info(`    • ${tool.registeredName}`);
+      }
+    }
+  }
+
+  if (connections.size < enabledServers.length) {
+    logger.info("  --- 连接中/失败 ---");
+    for (const serverConfig of enabledServers) {
+      if (!connections.has(serverConfig.name)) {
+        logger.info(`    ○ ${serverConfig.name}`);
+      }
+    }
+  }
+  logger.info("=========================");
+}
 
 export default mcpToolBridgePlugin;

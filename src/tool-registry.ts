@@ -49,14 +49,8 @@ export class ToolRegistry {
     }> = [];
 
     for (const toolInfo of tools) {
-      // Skip if already registered
-      if (this.registeredTools.has(toolInfo.registeredName)) {
-        continue;
-      }
-
       const definition = this.createToolDefinition(toolInfo);
       definitions.push({ toolInfo, toolDefinition: definition });
-      this.registeredTools.set(toolInfo.registeredName, toolInfo);
     }
 
     return definitions;
