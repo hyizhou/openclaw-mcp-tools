@@ -73,7 +73,7 @@ export class McpClientManager {
       // Fetch available tools
       connection.tools = await this.fetchTools(connection);
 
-      this.logger.info(
+      this.logger.debug?.(
         `openclaw-mcp-tools: connected to "${config.name}", found ${connection.tools.length} tools`
       );
 
@@ -122,7 +122,7 @@ export class McpClientManager {
 
     connection.connected = false;
     this.connections.delete(serverName);
-    this.logger.info(`openclaw-mcp-tools: disconnected from "${serverName}"`);
+    this.logger.debug?.(`openclaw-mcp-tools: disconnected from "${serverName}"`);
   }
 
   /**
@@ -314,7 +314,7 @@ export class McpClientManager {
       clearTimeout(existingTimer);
     }
 
-    this.logger.info(
+    this.logger.debug?.(
       `openclaw-mcp-tools: scheduling reconnect to "${config.name}" in ${this.reconnectDelayMs}ms`
     );
 

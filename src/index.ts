@@ -97,7 +97,7 @@ const mcpToolBridgePlugin = {
         toolCallTimeoutMs: config.toolCallTimeoutMs,
       });
 
-      api.logger.info(`openclaw-mcp-tools: initializing with ${config.servers.length} server(s)`);
+      api.logger.debug?.(`openclaw-mcp-tools: initializing with ${config.servers.length} server(s)`);
     }
 
     // Register tool factory function.
@@ -135,7 +135,7 @@ const mcpToolBridgePlugin = {
         printStatus(config, ctx.logger);
       },
       stop: async (ctx) => {
-        ctx.logger.info("openclaw-mcp-tools: service stopping...");
+        ctx.logger.debug?.("openclaw-mcp-tools: service stopping...");
         if (clientManager) {
           await clientManager.disconnectAll();
         }
@@ -163,7 +163,7 @@ async function connectToMcpServers(
   for (const serverConfig of enabledServers) {
     try {
       await clientManager!.connect(serverConfig);
-      logger.info(`openclaw-mcp-tools: connected to "${serverConfig.name}"`);
+      logger.debug?.(`openclaw-mcp-tools: connected to "${serverConfig.name}"`);
     } catch (error) {
       logger.error(
         `openclaw-mcp-tools: failed to connect to "${serverConfig.name}": ${String(error)}`
@@ -206,7 +206,7 @@ function getAvailableTools(logger: OpenClawPluginApi["logger"]): ToolDefinition[
     }
   }
 
-  logger.info(`openclaw-mcp-tools: returning ${tools.length} tools`);
+  logger.debug?.(`openclaw-mcp-tools: returning ${tools.length} tools`);
   return tools;
 }
 
@@ -224,28 +224,22 @@ function printStatus(
     0
   );
 
-  logger.info("=== MCP Tool Bridge 状态 ===");
-  logger.info(`  已配置服务器: ${config.servers.length}`);
-  logger.info(`  已连接服务器: ${connections.size}`);
-  logger.info(`  可用工具: ${totalTools}`);
+  logger.info("=== OpenClaw MCP Tools ===");
+  logger.info(`  configured: ${config.servers.length}, connected: ${connections.size}, tools: ${totalTools}`);
 
   if (connections.size > 0) {
-    logger.info("  --- 已加载工具 ---");
     for (const [serverName, conn] of connections) {
-      logger.info(`  [${serverName}] (${conn.tools.length} 个工具)`);
-      for (const tool of conn.tools) {
-        logger.info(`    • ${tool.registeredName}`);
-      }
+      const toolNames = conn.tools.map((t: { registeredName: string }) => t.registeredName).join(", ");
+      logger.info(`  [${serverName}] (${conn.tools.length}) ${toolNames}`);
     }
   }
 
   if (connections.size < enabledServers.length) {
-    logger.info("  --- 连接中/失败 ---");
-    for (const serverConfig of enabledServers) {
-      if (!connections.has(serverConfig.name)) {
-        logger.info(`    ○ ${serverConfig.name}`);
-      }
-    }
+    const pending = enabledServers
+      .filter((s) => !connections.has(s.name))
+      .map((s) => s.name)
+      .join(", ");
+    logger.info(`  pending: ${pending}`);
   }
   logger.info("=========================");
 }
