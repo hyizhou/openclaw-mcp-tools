@@ -1,5 +1,7 @@
 # OpenClaw MCP Tools
 
+[![npm version](https://img.shields.io/npm/v/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm license](https://img.shields.io/npm/l/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm downloads](https://img.shields.io/npm/dt/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools)
+
 将 MCP 服务器的工具直接注册为 OpenClaw 原生工具，AI 无需通过 CLI 即可调用。
 
 ## 为什么不用官方的 mcporter？
@@ -41,6 +43,8 @@ openclaw plugins install openclaw-mcp-tools
 
 在 OpenClaw 配置文件 (`~/.openclaw/openclaw.json`) 中添加：
 
+### stdio 传输（本地进程）
+
 ```json
 {
   "plugins": {
@@ -50,11 +54,11 @@ openclaw plugins install openclaw-mcp-tools
         "config": {
           "servers": [
             {
-              "name": "filesystem",
+              "name": "github",
               "type": "stdio",
               "command": "npx",
-              "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/docs"],
-              "enabled": true
+              "args": ["-y", "@modelcontextprotocol/server-github"],
+              "env": { "GITHUB_TOKEN": "ghp_xxx" }
             }
           ]
         }
@@ -64,9 +68,7 @@ openclaw plugins install openclaw-mcp-tools
 }
 ```
 
-## 配置
-
-在 `~/.openclaw/openclaw.json` 中添加：
+### streamableHttp 传输（远程服务器）
 
 ```json
 {
@@ -77,10 +79,10 @@ openclaw plugins install openclaw-mcp-tools
         "config": {
           "servers": [
             {
-              "name": "filesystem",
-              "type": "stdio",
-              "command": "npx",
-              "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/docs"]
+              "name": "remote",
+              "type": "streamableHttp",
+              "url": "http://localhost:3000/mcp",
+              "headers": { "Authorization": "Bearer xxx" }
             }
           ]
         }
@@ -99,18 +101,6 @@ openclaw plugins install openclaw-mcp-tools
 | `enabled` | ❌ | 是否启用，默认 `true` |
 | `toolPrefix` | ❌ | 工具名前缀，如 `web_` |
 | `toolFilter` | ❌ | 只加载指定工具 |
-
-**stdio 传输**（本地进程）：
-
-```json
-{ "name": "github", "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"], "env": { "GITHUB_TOKEN": "ghp_xxx" } }
-```
-
-**streamableHttp 传输**（远程服务器）：
-
-```json
-{ "name": "remote", "type": "streamableHttp", "url": "http://localhost:3000/mcp", "headers": { "Authorization": "Bearer xxx" } }
-```
 
 ### 全局配置
 

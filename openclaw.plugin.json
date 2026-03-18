@@ -1,6 +1,6 @@
 {
-  "id": "mcp-tool-bridge",
-  "name": "MCP Tool Bridge",
+  "id": "openclaw-mcp-tools",
+  "name": "OpenClaw MCP Tools",
   "description": "Bridges MCP server tools as native OpenClaw tools, enabling direct AI invocation without skill or mcporter intermediaries.",
   "configSchema": {
     "type": "object",
