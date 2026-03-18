@@ -1,8 +1,13 @@
 {
-  "name": "@openclaw/mcp-tool-bridge",
-  "version": "26.3.15",
-  "private": true,
+  "name": "openclaw-mcp-tools",
+  "version": "1.0.0",
   "description": "OpenClaw plugin to bridge MCP server tools as native OpenClaw tools",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyizhou/openclaw-mcp-tools"
+  },
+  "keywords": ["openclaw", "mcp", "model-context-protocol", "ai", "plugin"],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
