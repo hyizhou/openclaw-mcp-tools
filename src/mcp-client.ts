@@ -179,15 +179,14 @@ export class McpClientManager {
     const timeout = timeoutMs ?? 60000;
 
     try {
-      const result = await Promise.race([
-        connection.client.callTool({
+      const result = await connection.client.callTool(
+        {
           name: toolName,
           arguments: params,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Tool call timeout after ${timeout}ms`)), timeout)
-        ),
-      ]);
+        },
+        undefined,
+        { timeout }
+      );
 
       return result;
     } catch (error) {
