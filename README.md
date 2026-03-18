@@ -1,49 +1,51 @@
 # OpenClaw MCP Tools
 
+[中文文档](./README-zh.md)
+
 [![npm version](https://img.shields.io/npm/v/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm license](https://img.shields.io/npm/l/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm downloads](https://img.shields.io/npm/dt/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools)
 
-将 MCP 服务器的工具直接注册为 OpenClaw 原生工具，AI 无需通过 CLI 即可调用。
+Bridge MCP server tools as native OpenClaw tools. AI agents can call them directly without CLI.
 
-## 为什么不用官方的 mcporter？
+## Why not the official mcporter?
 
-OpenClaw 官方通过 [mcporter](https://mcporter.dev) skill 支持 MCP，但他有如下缺点：
-1. 它是间接调用，`AI → 读取mcporter skill  → shell命令 → mcporter CLI → MCP服务器`
-2. MCP提供的工具无法被Agent直接看到，需要主动在 TOOLS.md 文档中记录模型所能使用的工具列表。
+OpenClaw officially supports MCP through [mcporter](https://mcporter.dev) skill, but it has limitations:
+1. Indirect invocation: `AI → read mcporter skill → shell command → mcporter CLI → MCP server`
+2. MCP tools are invisible to the agent — you must manually list them in TOOLS.md
 
-**本插件的优势**：
+**Advantages of this plugin:**
 
-| | mcporter (官方) | OpenClaw MCP Tools (本插件) |
+| | mcporter (official) | OpenClaw MCP Tools (this plugin) |
 |---|---|---|
-| 调用方式 | AI 执行 shell 命令 | AI 直接调用原生工具 |
-| 延迟 | 需启动 CLI 进程 | 直接调用，无额外开销 |
-| 工具描述 | AI 需学习 mcporter 语法 | 工具 schema 直接可见 |
-| 依赖 | 需安装 mcporter CLI | 无额外依赖 |
+| Invocation | AI runs shell commands | AI calls native tools directly |
+| Latency | Spawns CLI process each time | Direct call, no overhead |
+| Tool descriptions | AI must learn mcporter syntax | Tool schemas are directly visible |
+| Dependency | Requires mcporter CLI | No extra dependencies |
 
-简单说：**mcporter 是"教 AI 用锤子"，本插件是"直接把锤子放 AI 手里"**。
+In short: **mcporter teaches AI to use a hammer, this plugin puts the hammer directly in AI's hand**.
 
-## 功能
+## Features
 
-- 🔌 同时连接多个 MCP 服务器
-- 🔄 自动重连
-- 🏷️ 工具名前缀（避免冲突）
-- 🔍 工具过滤
-- 📡 支持 stdio / HTTP / SSE 传输
+- Connect to multiple MCP servers simultaneously
+- Auto-reconnect on disconnect
+- Tool name prefix (avoid conflicts)
+- Tool filtering
+- Supports stdio / SSE / streamableHttp transports
 
-## 安装
+## Installation
 
 ```bash
-# 本地链接
+# Local link
 openclaw plugins install -l ./openclaw-mcp-tools
 
-# 或 npm 安装
+# Or via npm
 openclaw plugins install openclaw-mcp-tools
 ```
 
-## 配置
+## Configuration
 
-在 OpenClaw 配置文件 (`~/.openclaw/openclaw.json`) 中添加：
+Add to your OpenClaw config file (`~/.openclaw/openclaw.json`):
 
-### stdio 传输（本地进程）
+### stdio transport (local process)
 
 ```json
 {
@@ -68,7 +70,7 @@ openclaw plugins install openclaw-mcp-tools
 }
 ```
 
-### streamableHttp 传输（远程服务器）
+### streamableHttp transport (remote server)
 
 ```json
 {
@@ -92,39 +94,50 @@ openclaw plugins install openclaw-mcp-tools
 }
 ```
 
-### 服务器配置
+### Server configuration
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `name` | ✅ | 服务器标识 |
-| `type` | ✅ | `stdio` / `streamableHttp` |
-| `enabled` | ❌ | 是否启用，默认 `true` |
-| `toolPrefix` | ❌ | 工具名前缀，如 `web_` |
-| `toolFilter` | ❌ | 只加载指定工具 |
+Config path: `plugins.entries.openclaw-mcp-tools.config.servers[]`
 
-### 全局配置
+| Field | Required | Transport | Description |
+|-------|----------|-----------|-------------|
+| `name` | Yes | All | Unique server identifier |
+| `type` | Yes | All | `stdio` / `sse` / `streamableHttp` |
+| `enabled` | No | All | Enable/disable, default `true` |
+| `toolPrefix` | No | All | Tool name prefix, e.g. `web_` |
+| `toolFilter` | No | All | Only load specified tools (array) |
+| `command` | Yes* | `stdio` | Command to run, e.g. `npx` |
+| `args` | No | `stdio` | Command arguments (array) |
+| `env` | No | `stdio` | Environment variables, e.g. `{ "GITHUB_TOKEN": "ghp_xxx" }` |
+| `url` | Yes* | `sse` / `streamableHttp` | Server URL |
+| `headers` | No | `streamableHttp` | HTTP request headers, e.g. `{ "Authorization": "Bearer xxx" }` |
 
-| 字段 | 默认值 | 说明 |
-|------|--------|------|
-| `autoReconnect` | `true` | 断开后自动重连 |
-| `reconnectDelayMs` | `5000` | 重连延迟 |
-| `toolCallTimeoutMs` | `60000` | 调用超时 |
+> *`command` is required for `stdio` transport; `url` is required for `sse` / `streamableHttp` transport.
 
-## 调试
+### Global configuration
+
+Config path: `plugins.entries.openclaw-mcp-tools.config`
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `autoReconnect` | `true` | Auto-reconnect on disconnect |
+| `reconnectDelayMs` | `5000` | Reconnect delay (ms) |
+| `toolCallTimeoutMs` | `60000` | Tool call timeout (ms) |
+
+## Debugging
 
 ```bash
 openclaw start --verbose
 openclaw plugins doctor
 ```
 
-| 问题 | 解决 |
-|------|------|
-| 连接失败 | 检查 command 路径和环境变量 |
-| 工具未注册 | 检查 toolFilter 配置 |
-| 超时错误 | 增加 toolCallTimeoutMs |
-| 环境变量未生效 | env 值必须是字符串 |
+| Issue | Solution |
+|-------|----------|
+| Connection failed | Check command path and environment variables |
+| Tools not registered | Check `toolFilter` configuration |
+| Timeout error | Increase `toolCallTimeoutMs` |
+| Environment variables not working | `env` values must be strings |
 
-## 开发
+## Development
 
 ```bash
 npm install && npm run build
