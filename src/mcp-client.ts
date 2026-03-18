@@ -45,15 +45,15 @@ export class McpClientManager {
   async connect(config: McpServerConfig): Promise<McpServerConnection> {
     const existingConnection = this.connections.get(config.name);
     if (existingConnection?.connected) {
-      this.logger.warn?.(`mcp-tool-bridge: server "${config.name}" already connected`);
+      this.logger.warn?.(`openclaw-mcp-tools: server "${config.name}" already connected`);
       return existingConnection;
     }
 
-    this.logger.debug?.(`mcp-tool-bridge: connecting to "${config.name}" (${config.type})`);
+    this.logger.debug?.(`openclaw-mcp-tools: connecting to "${config.name}" (${config.type})`);
 
     const transport = await this.createTransport(config);
     const client = new Client(
-      { name: "openclaw-mcp-tool-bridge", version: "1.0.0" },
+      { name: "openclaw-openclaw-mcp-tools", version: "1.0.0" },
       { capabilities: {} }
     );
 
@@ -74,7 +74,7 @@ export class McpClientManager {
       connection.tools = await this.fetchTools(connection);
 
       this.logger.info(
-        `mcp-tool-bridge: connected to "${config.name}", found ${connection.tools.length} tools`
+        `openclaw-mcp-tools: connected to "${config.name}", found ${connection.tools.length} tools`
       );
 
       // Set up disconnect handler
@@ -90,7 +90,7 @@ export class McpClientManager {
     } catch (error) {
       connection.lastError = error instanceof Error ? error : new Error(String(error));
       this.logger.error(
-        `mcp-tool-bridge: failed to connect to "${config.name}": ${connection.lastError.message}`
+        `openclaw-mcp-tools: failed to connect to "${config.name}": ${connection.lastError.message}`
       );
       throw connection.lastError;
     }
@@ -116,13 +116,13 @@ export class McpClientManager {
       await connection.client.close();
     } catch (error) {
       this.logger.warn?.(
-        `mcp-tool-bridge: error closing connection to "${serverName}": ${String(error)}`
+        `openclaw-mcp-tools: error closing connection to "${serverName}": ${String(error)}`
       );
     }
 
     connection.connected = false;
     this.connections.delete(serverName);
-    this.logger.info(`mcp-tool-bridge: disconnected from "${serverName}"`);
+    this.logger.info(`openclaw-mcp-tools: disconnected from "${serverName}"`);
   }
 
   /**
@@ -193,7 +193,7 @@ export class McpClientManager {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `mcp-tool-bridge: tool call failed on "${serverName}/${toolName}": ${errorMessage}`
+        `openclaw-mcp-tools: tool call failed on "${serverName}/${toolName}": ${errorMessage}`
       );
       throw error;
     }
@@ -282,7 +282,7 @@ export class McpClientManager {
       return tools;
     } catch (error) {
       this.logger.error(
-        `mcp-tool-bridge: failed to fetch tools from "${connection.config.name}": ${String(error)}`
+        `openclaw-mcp-tools: failed to fetch tools from "${connection.config.name}": ${String(error)}`
       );
       return [];
     }
@@ -292,7 +292,7 @@ export class McpClientManager {
     const connection = this.connections.get(serverName);
     if (connection) {
       connection.connected = false;
-      this.logger.warn?.(`mcp-tool-bridge: server "${serverName}" disconnected`);
+      this.logger.warn?.(`openclaw-mcp-tools: server "${serverName}" disconnected`);
     }
 
     if (this.autoReconnect && connection?.config) {
@@ -305,7 +305,7 @@ export class McpClientManager {
     if (connection) {
       connection.lastError = error;
     }
-    this.logger.error(`mcp-tool-bridge: transport error on "${serverName}": ${error.message}`);
+    this.logger.error(`openclaw-mcp-tools: transport error on "${serverName}": ${error.message}`);
   }
 
   private scheduleReconnect(config: McpServerConfig): void {
@@ -316,7 +316,7 @@ export class McpClientManager {
     }
 
     this.logger.info(
-      `mcp-tool-bridge: scheduling reconnect to "${config.name}" in ${this.reconnectDelayMs}ms`
+      `openclaw-mcp-tools: scheduling reconnect to "${config.name}" in ${this.reconnectDelayMs}ms`
     );
 
     const timer = setTimeout(async () => {
@@ -325,7 +325,7 @@ export class McpClientManager {
         await this.connect(config);
       } catch (error) {
         this.logger.warn?.(
-          `mcp-tool-bridge: reconnect failed for "${config.name}": ${String(error)}`
+          `openclaw-mcp-tools: reconnect failed for "${config.name}": ${String(error)}`
         );
         // Schedule another reconnect attempt
         if (this.autoReconnect) {

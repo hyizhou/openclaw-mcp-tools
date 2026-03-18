@@ -1,5 +1,5 @@
 /**
- * Type definitions for mcp-tool-bridge plugin
+ * Type definitions for openclaw-mcp-tools plugin
  */
 
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";

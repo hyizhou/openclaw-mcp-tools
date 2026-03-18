@@ -109,7 +109,7 @@ export class ToolRegistry {
       return this.convertResult(result);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`mcp-tool-bridge: tool call failed on "${serverName}/${toolName}": ${errorMessage}`);
+      this.logger.error(`openclaw-mcp-tools: tool call failed on "${serverName}/${toolName}": ${errorMessage}`);
       return {
         content: [
           {

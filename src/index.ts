@@ -65,7 +65,7 @@ let initPromise: Promise<void> | null = null;
 // ============================================================================
 
 const mcpToolBridgePlugin = {
-  id: "mcp-tool-bridge",
+  id: "openclaw-mcp-tools",
   name: "MCP Tool Bridge",
   description: "Bridges MCP server tools as native OpenClaw tools for direct AI invocation",
 
@@ -80,7 +80,7 @@ const mcpToolBridgePlugin = {
     };
 
     if (config.servers.length === 0) {
-      api.logger.warn("mcp-tool-bridge: no MCP servers configured");
+      api.logger.warn("openclaw-mcp-tools: no MCP servers configured");
       return;
     }
 
@@ -97,7 +97,7 @@ const mcpToolBridgePlugin = {
         toolCallTimeoutMs: config.toolCallTimeoutMs,
       });
 
-      api.logger.info(`mcp-tool-bridge: initializing with ${config.servers.length} server(s)`);
+      api.logger.info(`openclaw-mcp-tools: initializing with ${config.servers.length} server(s)`);
     }
 
     // Register tool factory function.
@@ -115,7 +115,7 @@ const mcpToolBridgePlugin = {
     // Each registry needs its own service registration so that
     // startPluginServices() can find and start it.
     api.registerService({
-      id: "mcp-tool-bridge",
+      id: "openclaw-mcp-tools",
       start: async (ctx) => {
         // Start MCP connections
         initPromise = connectToMcpServers(config, ctx.logger);
@@ -128,14 +128,14 @@ const mcpToolBridgePlugin = {
             new Promise<void>((resolve) => setTimeout(resolve, 10000)),
           ]);
         } catch (error) {
-          ctx.logger.error(`mcp-tool-bridge: initial connection error: ${String(error)}`);
+          ctx.logger.error(`openclaw-mcp-tools: initial connection error: ${String(error)}`);
         }
 
         // Print status after initial connection attempt
         printStatus(config, ctx.logger);
       },
       stop: async (ctx) => {
-        ctx.logger.info("mcp-tool-bridge: service stopping...");
+        ctx.logger.info("openclaw-mcp-tools: service stopping...");
         if (clientManager) {
           await clientManager.disconnectAll();
         }
@@ -163,10 +163,10 @@ async function connectToMcpServers(
   for (const serverConfig of enabledServers) {
     try {
       await clientManager!.connect(serverConfig);
-      logger.info(`mcp-tool-bridge: connected to "${serverConfig.name}"`);
+      logger.info(`openclaw-mcp-tools: connected to "${serverConfig.name}"`);
     } catch (error) {
       logger.error(
-        `mcp-tool-bridge: failed to connect to "${serverConfig.name}": ${String(error)}`
+        `openclaw-mcp-tools: failed to connect to "${serverConfig.name}": ${String(error)}`
       );
     }
   }
@@ -178,13 +178,13 @@ async function connectToMcpServers(
  */
 function getAvailableTools(logger: OpenClawPluginApi["logger"]): ToolDefinition[] {
   if (!toolRegistry || !clientManager) {
-    logger.warn("mcp-tool-bridge: toolRegistry or clientManager not initialized");
+    logger.warn("openclaw-mcp-tools: toolRegistry or clientManager not initialized");
     return [];
   }
 
   const connections = clientManager.getConnections();
   if (connections.size === 0) {
-    logger.debug?.("mcp-tool-bridge: no MCP connections available yet");
+    logger.debug?.("openclaw-mcp-tools: no MCP connections available yet");
     return [];
   }
 
@@ -201,12 +201,12 @@ function getAvailableTools(logger: OpenClawPluginApi["logger"]): ToolDefinition[
       });
     } catch (error) {
       logger.error(
-        `mcp-tool-bridge: failed to create tool "${toolInfo.registeredName}": ${String(error)}`
+        `openclaw-mcp-tools: failed to create tool "${toolInfo.registeredName}": ${String(error)}`
       );
     }
   }
 
-  logger.info(`mcp-tool-bridge: returning ${tools.length} tools`);
+  logger.info(`openclaw-mcp-tools: returning ${tools.length} tools`);
   return tools;
 }
 
