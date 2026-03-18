@@ -123,18 +123,45 @@ Config path: `plugins.entries.openclaw-mcp-tools.config`
 | `reconnectDelayMs` | `5000` | Reconnect delay (ms) |
 | `toolCallTimeoutMs` | `60000` | Tool call timeout (ms) |
 
-## Debugging
+## Troubleshooting
 
-```bash
-openclaw start --verbose
-openclaw plugins doctor
+### Tool call timeout
+
+When an MCP tool takes a long time to respond (e.g., image recognition), it may exceed the default 60s timeout. Increase it in the global config:
+
+```json
+"plugins": {
+  "entries": {
+    "openclaw-mcp-tools": {
+      "config": {
+        "toolCallTimeoutMs": 120000
+      }
+    }
+  }
+}
 ```
+
+Note: OpenClaw itself may also have a tool call timeout. If so, you need to increase both.
+
+### Tool name conflicts
+
+When multiple MCP servers expose tools with the same name, the last registered one overwrites the previous. Use `toolPrefix` to avoid conflicts:
+
+```json
+{
+  "servers": [
+    { "name": "server-a", "toolPrefix": "a_", ... },
+    { "name": "server-b", "toolPrefix": "b_", ... }
+  ]
+}
+```
+
+### Other issues
 
 | Issue | Solution |
 |-------|----------|
 | Connection failed | Check command path and environment variables |
 | Tools not registered | Check `toolFilter` configuration |
-| Timeout error | Increase `toolCallTimeoutMs` |
 | Environment variables not working | `env` values must be strings |
 
 ## Development

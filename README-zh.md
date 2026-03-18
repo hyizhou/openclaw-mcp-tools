@@ -121,18 +121,45 @@ openclaw plugins install openclaw-mcp-tools
 | `reconnectDelayMs` | `5000` | 重连延迟（毫秒） |
 | `toolCallTimeoutMs` | `60000` | 工具调用超时（毫秒） |
 
-## 调试
+## 故障排除
 
-```bash
-openclaw start --verbose
-openclaw plugins doctor
+### 工具调用超时
+
+当 MCP 工具响应时间较长（如识图工具），可能超出默认 60 秒超时。在全局配置中调大：
+
+```json
+"plugins": {
+  "entries": {
+    "openclaw-mcp-tools": {
+      "config": {
+        "toolCallTimeoutMs": 120000
+      }
+    }
+  }
+}
 ```
+
+注意：OpenClaw 本身也可能有工具调用超时限制，如有需要两边都要调大。
+
+### 工具名称冲突
+
+当多个 MCP 服务器暴露同名工具时，后注册的会覆盖前一个。使用 `toolPrefix` 避免冲突：
+
+```json
+{
+  "servers": [
+    { "name": "server-a", "toolPrefix": "a_", ... },
+    { "name": "server-b", "toolPrefix": "b_", ... }
+  ]
+}
+```
+
+### 其他问题
 
 | 问题 | 解决 |
 |------|------|
 | 连接失败 | 检查 command 路径和环境变量 |
 | 工具未注册 | 检查 toolFilter 配置 |
-| 超时错误 | 增加 toolCallTimeoutMs |
 | 环境变量未生效 | env 值必须是字符串 |
 
 ## 开发
