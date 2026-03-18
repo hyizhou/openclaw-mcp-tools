@@ -145,7 +145,7 @@ Note: OpenClaw itself may also have a tool call timeout. If so, you need to incr
 
 ### Tool name conflicts
 
-When multiple MCP servers expose tools with the same name, the last registered one overwrites the previous. Use `toolPrefix` to avoid conflicts:
+When multiple MCP servers expose tools with the same name, the plugin automatically renames the later one to `serverName.toolName` (e.g., `github.web-search`) to avoid conflicts. You can also use `toolPrefix` to manually prevent conflicts:
 
 ```json
 {

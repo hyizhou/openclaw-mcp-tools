@@ -143,7 +143,7 @@ openclaw plugins install openclaw-mcp-tools
 
 ### 工具名称冲突
 
-当多个 MCP 服务器暴露同名工具时，后注册的会覆盖前一个。使用 `toolPrefix` 避免冲突：
+当多个 MCP 服务器暴露同名工具时，插件会自动将后出现的重命名为 `serverName.toolName`（如 `github.web-search`）以避免冲突。你也可以使用 `toolPrefix` 手动避免冲突：
 
 ```json
 {

@@ -48,7 +48,30 @@ export class ToolRegistry {
       };
     }> = [];
 
-    for (const toolInfo of tools) {
+    const seenNames = new Set<string>();
+
+    for (let toolInfo of tools) {
+      let name = toolInfo.registeredName;
+
+      if (seenNames.has(name)) {
+        // Auto-rename to serverName.toolName to avoid conflict
+        name = `${toolInfo.serverName}.${toolInfo.originalName}`;
+        this.logger.warn(
+          `openclaw-mcp-tools: tool name conflict "${toolInfo.registeredName}" from "${toolInfo.serverName}", renamed to "${name}"`
+        );
+
+        // Update toolInfo so execute uses the correct original name
+        toolInfo = { ...toolInfo, registeredName: name };
+
+        if (seenNames.has(name)) {
+          this.logger.warn(
+            `openclaw-mcp-tools: tool name "${name}" still conflicts after rename, skipping`
+          );
+          continue;
+        }
+      }
+
+      seenNames.add(name);
       const definition = this.createToolDefinition(toolInfo);
       definitions.push({ toolInfo, toolDefinition: definition });
     }
