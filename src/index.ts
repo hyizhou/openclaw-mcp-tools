@@ -8,6 +8,7 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import { McpClientManager } from "./mcp-client.js";
 import { ToolRegistry } from "./tool-registry.js";
+import { registerMcpCli } from "./mcp-cli.js";
 import type { McpToolBridgeConfig, McpServerConfig } from "./types.js";
 import { DEFAULT_CONFIG } from "./types.js";
 
@@ -144,6 +145,18 @@ const mcpToolBridgePlugin = {
         }
       },
     });
+
+    // Register CLI commands for MCP management
+    api.registerCli(
+      (cliCtx) => {
+        registerMcpCli(cliCtx, {
+          servers: config.servers,
+          config,
+          getClientManager: () => clientManager,
+        });
+      },
+      { commands: ["mcp"] }
+    );
   },
 };
 

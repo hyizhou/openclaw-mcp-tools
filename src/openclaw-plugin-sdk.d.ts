@@ -160,7 +160,15 @@ declare module "openclaw/plugin-sdk" {
     registerHttpRoute: (route: unknown) => void;
     registerChannel: (channel: unknown) => void;
     registerGatewayMethod: (name: string, handler: unknown) => void;
-    registerCli: (setup: unknown, options?: unknown) => void;
+    registerCli: (
+      registrar: (ctx: {
+        program: import("commander").Command;
+        config: unknown;
+        workspaceDir?: string;
+        logger: PluginLogger;
+      }) => void | Promise<void>,
+      opts?: { commands?: string[] }
+    ) => void;
     registerProvider: (provider: unknown) => void;
     registerCommand: (command: unknown) => void;
     registerContextEngine: (name: string, factory: unknown) => void;
