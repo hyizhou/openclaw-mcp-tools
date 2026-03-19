@@ -28,6 +28,74 @@ OpenClaw 官方通过 [mcporter](https://mcporter.dev) skill 支持 MCP，但他
 - 🏷️ 工具名前缀（避免冲突）
 - 🔍 工具过滤
 - 📡 支持 stdio / HTTP / SSE 传输
+- 🖥️ CLI 命令管理 MCP 连接
+
+## CLI 命令
+
+OpenClaw MCP Tools 提供 CLI 命令来管理 MCP 服务器：
+
+```bash
+openclaw mcp <command> [options]
+```
+
+### 可用命令
+
+| 命令 | 说明 |
+|------|------|
+| `list` | 列出配置的 MCP 服务器 |
+| `tools` | 列出已连接服务器上可用的 MCP 工具 |
+| `status` | 显示 MCP 连接状态和统计信息 |
+| `call <server> <tool> [args]` | 使用 JSON 参数调用 MCP 工具 |
+| `connect <server>` | 连接到配置的 MCP 服务器 |
+| `disconnect <server>` | 断开与 MCP 服务器的连接 |
+| `reload [server]` | 重新加载 MCP 服务器连接 |
+
+### 使用示例
+
+```bash
+# 列出所有配置的服务器
+openclaw mcp list
+
+# JSON 格式输出
+openclaw mcp list --json
+
+# 查看连接状态
+openclaw mcp status
+
+# 列出可用工具
+openclaw mcp tools
+openclaw mcp tools --server github
+
+# 调用工具
+openclaw mcp call github search_repositories '{"query": "mcp"}'
+
+# 管理连接
+openclaw mcp connect github
+openclaw mcp disconnect github
+openclaw mcp reload github
+openclaw mcp reload  # 重载所有服务器
+```
+
+### 独立测试
+
+无需安装到 OpenClaw 即可测试 CLI 命令：
+
+```bash
+# 创建配置文件
+cp mcp-config.example.json mcp-config.json
+
+# 运行命令
+npx tsx src/cli.ts mcp --help
+npx tsx src/cli.ts mcp list
+npx tsx src/cli.ts mcp status --json
+```
+
+或使用环境变量：
+
+```bash
+MCP_SERVERS='[{"name":"test","type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/tmp"]}]' \
+npx tsx src/cli.ts mcp status
+```
 
 ## 安装
 
