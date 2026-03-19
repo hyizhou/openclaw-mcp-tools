@@ -81,9 +81,9 @@ async function main() {
     console.log('  {"servers":[{"name":"test","type":"stdio","command":"npx","args":["-y","@anthropic/mcp-server-test"]}]}');
   }
 
-  // Create client manager
+  // Create client manager (disable autoReconnect for CLI to allow clean exit)
   const clientManager = new McpClientManager(logger, {
-    autoReconnect: config.autoReconnect,
+    autoReconnect: false, // CLI mode: don't auto-reconnect
     reconnectDelayMs: config.reconnectDelayMs,
   });
 
