@@ -1,0 +1,14 @@
+{
+  "servers": [
+    {
+      "name": "filesystem",
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "enabled": true
+    }
+  ],
+  "autoReconnect": true,
+  "reconnectDelayMs": 5000,
+  "toolCallTimeoutMs": 60000
+}
