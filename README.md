@@ -83,8 +83,8 @@ openclaw mcp reload  # Reload all servers
 You can test CLI commands without installing into OpenClaw:
 
 ```bash
-# Create config file
-cp mcp-config.example.json mcp-config.json
+# Create config file (for standalone testing only)
+cp standalone-test-config.example.json standalone-test-config.json
 
 # Edit config as needed, then run
 npx tsx src/cli.ts mcp --help

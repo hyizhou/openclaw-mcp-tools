@@ -42,7 +42,7 @@ async function loadConfig(): Promise<McpToolBridgeConfig> {
   }
 
   // Try config file
-  const configPath = process.env.MCP_CONFIG ?? "./mcp-config.json";
+  const configPath = process.env.MCP_CONFIG ?? "./standalone-test-config.json";
   try {
     const content = await fs.readFile(configPath, "utf-8");
     const parsed = JSON.parse(content);

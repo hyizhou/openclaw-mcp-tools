@@ -81,8 +81,8 @@ openclaw mcp reload  # 重载所有服务器
 无需安装到 OpenClaw 即可测试 CLI 命令：
 
 ```bash
-# 创建配置文件
-cp mcp-config.example.json mcp-config.json
+# 创建配置文件（仅用于独立测试）
+cp standalone-test-config.example.json standalone-test-config.json
 
 # 运行命令
 npx tsx src/cli.ts mcp --help
