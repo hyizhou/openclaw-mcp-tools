@@ -191,6 +191,24 @@ Config path: `plugins.entries.openclaw-mcp-tools.config`
 | `reconnectDelayMs` | `5000` | Reconnect delay (ms) |
 | `toolCallTimeoutMs` | `60000` | Tool call timeout (ms) |
 
+### Performance Tips
+
+> **Too many tools may degrade model performance.** Each MCP server can expose dozens of tools, and the model must process all tool schemas on every request. Consider:
+>
+> 1. **Use `toolFilter`** to only load the tools you need from an MCP server:
+>    ```json
+>    { "name": "github", "toolFilter": ["search_repositories", "get_issue"], ... }
+>    ```
+>
+> 2. **Use `enabled: false`** to temporarily disable a server without deleting config
+>
+> 3. **Block tools in OpenClaw config** - Add tool names to `tools.deny` array in your OpenClaw configuration:
+>    ```json
+>    "tools": {
+>      "deny": ["mcp_tool_name_to_block", "another_tool"]
+>    }
+>    ```
+
 ## Troubleshooting
 
 ### Tool call timeout

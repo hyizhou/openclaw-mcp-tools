@@ -189,6 +189,24 @@ openclaw plugins install openclaw-mcp-tools
 | `reconnectDelayMs` | `5000` | 重连延迟（毫秒） |
 | `toolCallTimeoutMs` | `60000` | 工具调用超时（毫秒） |
 
+### 性能提示
+
+> **工具过多可能导致模型性能下降。** 每个 MCP 服务器可能暴露数十个工具，模型需要在每次请求时处理所有工具的 schema。建议：
+>
+> 1. **使用 `toolFilter`** 只加载需要的工具：
+>    ```json
+>    { "name": "github", "toolFilter": ["search_repositories", "get_issue"], ... }
+>    ```
+>
+> 2. **使用 `enabled: false`** 临时禁用服务器而不删除配置
+>
+> 3. **在 OpenClaw 配置中屏蔽工具** - 在 OpenClaw 配置的 `tools.deny` 数组中添加要屏蔽的工具名：
+>    ```json
+>    "tools": {
+>      "deny": ["要屏蔽的mcp工具名", "另一个工具"]
+>    }
+>    ```
+
 ## 故障排除
 
 ### 工具调用超时
