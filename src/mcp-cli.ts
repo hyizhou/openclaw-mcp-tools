@@ -45,16 +45,40 @@ export interface McpCliOptions {
  * Call a Gateway method via `openclaw gateway call` CLI.
  * This connects to the main process's Gateway to get real MCP state.
  */
-function callGatewayMethod(method: string, params?: Record<string, unknown>): Promise<Record<string, unknown>> {
+/**
+ * Extract JSON from stdout that may contain plugin logs or other non-JSON lines.
+ * The gateway JSON response is always the last complete JSON value in the output.
+ */
+function extractJsonFromOutput(stdout: string): Record<string, unknown> {
+  const trimmed = stdout.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // stdout contains non-JSON lines (e.g. plugin logs).
+    // Scan from the end to find the last '[' or '{' that starts valid JSON.
+  }
+  for (let i = trimmed.length - 1; i >= 0; i--) {
+    if (trimmed[i] === "[" || trimmed[i] === "{") {
+      try {
+        return JSON.parse(trimmed.slice(i));
+      } catch {
+        // Not the start of the JSON response, try earlier
+      }
+    }
+  }
+  throw new Error(`No valid JSON found in gateway output`);
+}
+
+function callGatewayMethod(method: string, _params?: Record<string, unknown>): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
-    const args = ["gateway", "call", method, "--timeout", "10000"];
+    const args = ["gateway", "call", method, "--timeout", "10000", "--json"];
     execFile("openclaw", args, (error, stdout, stderr) => {
       if (error) {
         reject(new Error(stderr?.trim() || error.message));
         return;
       }
       try {
-        resolve(JSON.parse(stdout));
+        resolve(extractJsonFromOutput(stdout));
       } catch (e) {
         reject(new Error(`Invalid gateway response: ${stdout}`));
       }
