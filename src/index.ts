@@ -13,6 +13,15 @@ import type { McpToolBridgeConfig, McpServerConfig } from "./types.js";
 import { DEFAULT_CONFIG } from "./types.js";
 
 // ============================================================================
+// Gateway Handler Types
+// ============================================================================
+
+type GatewayHandlerOpts = {
+  params: Record<string, unknown>;
+  respond: (ok: boolean, payload?: unknown, error?: { code?: string; message?: string }) => void;
+};
+
+// ============================================================================
 // Types (inline to avoid import issues)
 // ============================================================================
 
@@ -157,6 +166,9 @@ const mcpToolBridgePlugin = {
       },
       { commands: ["mcp"] }
     );
+
+    // Register Gateway methods for CLI to query main process state
+    registerGatewayHandlers(api, config);
   },
 };
 
@@ -255,6 +267,88 @@ function printStatus(
     logger.info(`  pending: ${pending}`);
   }
   logger.info("=========================");
+}
+
+// ============================================================================
+// Gateway Methods
+// ============================================================================
+
+/**
+ * Register Gateway methods that allow CLI to query main process state.
+ * These run in the main process where MCP connections are active.
+ */
+function registerGatewayHandlers(
+  api: OpenClawPluginApi,
+  config: McpToolBridgeConfig
+): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handler = (method: string, fn: (opts: GatewayHandlerOpts) => void) => {
+    api.registerGatewayMethod(method, fn as any);
+  };
+
+  // mcp.list - List configured servers with real connection status
+  handler("mcp.list", (opts) => {
+    const connections = clientManager?.getConnections() ?? new Map();
+    const result = config.servers.map((server) => {
+      const conn = connections.get(server.name);
+      return {
+        name: server.name,
+        type: server.type,
+        enabled: server.enabled !== false,
+        connected: conn?.connected ?? false,
+        toolCount: conn?.tools?.length ?? 0,
+        error: conn?.lastError?.message,
+      };
+    });
+    opts.respond(true, result);
+  });
+
+  // mcp.tools - List available tools from connected servers
+  handler("mcp.tools", (opts) => {
+    const serverFilter = opts.params.server as string | undefined;
+    const connections = clientManager?.getConnections() ?? new Map();
+    const tools: Array<{ name: string; server: string; originalName: string }> = [];
+
+    for (const [serverName, conn] of connections) {
+      if (!conn.connected) continue;
+      if (serverFilter && serverName !== serverFilter) continue;
+      for (const tool of conn.tools) {
+        tools.push({
+          name: tool.registeredName,
+          server: serverName,
+          originalName: tool.originalName,
+        });
+      }
+    }
+    opts.respond(true, tools);
+  });
+
+  // mcp.status - Show connection statistics
+  handler("mcp.status", (opts) => {
+    const connections = clientManager?.getConnections() ?? new Map();
+    const enabledServers = config.servers.filter((s) => s.enabled !== false);
+    const connectedServers = Array.from(connections.values()).filter((c) => c.connected);
+    const totalTools = connectedServers.reduce((sum, c) => sum + c.tools.length, 0);
+
+    const result = {
+      configured: config.servers.length,
+      enabled: enabledServers.length,
+      connected: connectedServers.length,
+      totalTools,
+      servers: config.servers.map((server) => {
+        const conn = connections.get(server.name);
+        return {
+          name: server.name,
+          type: server.type,
+          enabled: server.enabled !== false,
+          connected: conn?.connected ?? false,
+          toolCount: conn?.tools?.length ?? 0,
+          error: conn?.lastError?.message,
+        };
+      }),
+    };
+    opts.respond(true, result);
+  });
 }
 
 export default mcpToolBridgePlugin;

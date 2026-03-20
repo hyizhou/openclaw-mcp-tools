@@ -4,6 +4,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Command = any; // Commander type - provided by OpenClaw runtime
+import { execFile } from "node:child_process";
 import type { PluginLogger, McpServerConfig, McpToolBridgeConfig } from "./types.js";
 
 // Re-export McpServerConfig for use in CLI
@@ -36,6 +37,68 @@ export interface McpCliOptions {
   config: McpToolBridgeConfig;
 }
 
+// ============================================================================
+// Gateway Call Helper
+// ============================================================================
+
+/**
+ * Call a Gateway method via `openclaw gateway call` CLI.
+ * This connects to the main process's Gateway to get real MCP state.
+ */
+function callGatewayMethod(method: string, params?: Record<string, unknown>): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const args = ["gateway", "call", method, "--timeout", "10000"];
+    execFile("openclaw", args, (error, stdout, stderr) => {
+      if (error) {
+        reject(new Error(stderr?.trim() || error.message));
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch (e) {
+        reject(new Error(`Invalid gateway response: ${stdout}`));
+      }
+    });
+  });
+}
+
+/**
+ * Check if Gateway is available (OpenClaw main process is running)
+ */
+function isGatewayAvailable(): boolean {
+  // Gateway is available when running inside OpenClaw CLI
+  // (the main process with MCP connections is running separately)
+  return true;
+}
+
+// ============================================================================
+// Formatting Helpers
+// ============================================================================
+
+interface ServerStatus {
+  name: string;
+  type: string;
+  enabled: boolean;
+  connected: boolean;
+  toolCount: number;
+  error?: string;
+}
+
+function formatServerStatus(server: ServerStatus): void {
+  const status = server.connected ? "\x1b[32mconnected\x1b[0m" :
+                 server.enabled ? "\x1b[33mdisconnected\x1b[0m" :
+                 "\x1b[90mdisabled\x1b[0m";
+  const toolInfo = server.connected ? ` (${server.toolCount} tools)` : "";
+  const errorInfo = server.error ? ` \x1b[31merror: ${server.error}\x1b[0m` : "";
+  console.log(`  ${server.name}`);
+  console.log(`    type: ${server.type}`);
+  console.log(`    status: ${status}${toolInfo}${errorInfo}`);
+}
+
+// ============================================================================
+// Command Registration
+// ============================================================================
+
 /**
  * Register MCP CLI commands
  */
@@ -50,21 +113,31 @@ export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void
     .description("List configured MCP servers")
     .option("--json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {
-      const servers = options.servers;
-      const clientManager = options.getClientManager();
-      const connections = clientManager?.getConnections() ?? new Map();
+      let result: ServerStatus[];
 
-      const result = servers.map((server) => {
-        const conn = connections.get(server.name);
-        return {
+      if (isGatewayAvailable()) {
+        try {
+          result = await callGatewayMethod("mcp.list") as unknown as ServerStatus[];
+        } catch (e) {
+          console.error(`Gateway unavailable: ${(e as Error).message}`);
+          console.log("(showing config-only info)");
+          result = options.servers.map((server) => ({
+            name: server.name,
+            type: server.type,
+            enabled: server.enabled !== false,
+            connected: false,
+            toolCount: 0,
+          }));
+        }
+      } else {
+        result = options.servers.map((server) => ({
           name: server.name,
           type: server.type,
           enabled: server.enabled !== false,
-          connected: conn?.connected ?? false,
-          toolCount: conn?.tools?.length ?? 0,
-          error: conn?.lastError?.message,
-        };
-      });
+          connected: false,
+          toolCount: 0,
+        }));
+      }
 
       if (opts.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -79,14 +152,7 @@ export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void
       console.log("Configured MCP Servers:");
       console.log("");
       for (const server of result) {
-        const status = server.connected ? "\x1b[32mconnected\x1b[0m" :
-                       server.enabled ? "\x1b[33mdisconnected\x1b[0m" :
-                       "\x1b[90mdisabled\x1b[0m";
-        const toolInfo = server.connected ? ` (${server.toolCount} tools)` : "";
-        const errorInfo = server.error ? ` \x1b[31merror: ${server.error}\x1b[0m` : "";
-        console.log(`  ${server.name}`);
-        console.log(`    type: ${server.type}`);
-        console.log(`    status: ${status}${toolInfo}${errorInfo}`);
+        formatServerStatus(server);
       }
     });
 
@@ -97,30 +163,22 @@ export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void
     .option("--server <name>", "Filter by server name")
     .option("--json", "Output as JSON")
     .action(async (opts: { server?: string; json?: boolean }) => {
-      const clientManager = options.getClientManager();
-      const connections = clientManager?.getConnections() ?? new Map();
+      const gwParams: Record<string, unknown> = {};
+      if (opts.server) gwParams.server = opts.server;
 
-      const tools: Array<{
-        name: string;
-        server: string;
-        originalName: string;
-      }> = [];
+      let tools: Array<{ name: string; server: string; originalName: string }>;
 
-      for (const [serverName, conn] of connections) {
-        if (!conn.connected) continue;
-        if (opts.server && serverName !== opts.server) continue;
-
-        for (const tool of conn.tools) {
-          tools.push({
-            name: tool.registeredName,
-            server: serverName,
-            originalName: tool.originalName,
-          });
+      if (isGatewayAvailable()) {
+        try {
+          tools = await callGatewayMethod("mcp.tools", gwParams) as unknown as typeof tools;
+        } catch (e) {
+          console.error(`Gateway unavailable: ${(e as Error).message}`);
+          console.log("No MCP tools available.");
+          return;
         }
+      } else {
+        tools = [];
       }
-
-      // Suppress unused variable warning
-      void tools;
 
       if (opts.json) {
         console.log(JSON.stringify(tools, null, 2));
@@ -129,9 +187,6 @@ export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void
 
       if (tools.length === 0) {
         console.log("No MCP tools available.");
-        if (connections.size === 0) {
-          console.log("Hint: No servers are connected.");
-        }
         return;
       }
 
@@ -163,31 +218,48 @@ export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void
     .description("Show MCP connection status and statistics")
     .option("--json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {
-      const servers = options.servers;
-      const clientManager = options.getClientManager();
-      const connections = clientManager?.getConnections() ?? new Map();
+      let result: {
+        configured: number;
+        enabled: number;
+        connected: number;
+        totalTools: number;
+        servers: ServerStatus[];
+      };
 
-      const enabledServers = servers.filter((s) => s.enabled !== false);
-      const connectedServers = Array.from(connections.values()).filter((c) => c.connected);
-      const totalTools = connectedServers.reduce((sum, c) => sum + c.tools.length, 0);
-
-      const result = {
-        configured: servers.length,
-        enabled: enabledServers.length,
-        connected: connectedServers.length,
-        totalTools,
-        servers: servers.map((server) => {
-          const conn = connections.get(server.name);
-          return {
+      if (isGatewayAvailable()) {
+        try {
+          result = await callGatewayMethod("mcp.status") as unknown as typeof result;
+        } catch (e) {
+          console.error(`Gateway unavailable: ${(e as Error).message}`);
+          result = {
+            configured: options.servers.length,
+            enabled: options.servers.filter((s) => s.enabled !== false).length,
+            connected: 0,
+            totalTools: 0,
+            servers: options.servers.map((server) => ({
+              name: server.name,
+              type: server.type,
+              enabled: server.enabled !== false,
+              connected: false,
+              toolCount: 0,
+            })),
+          };
+        }
+      } else {
+        result = {
+          configured: options.servers.length,
+          enabled: options.servers.filter((s) => s.enabled !== false).length,
+          connected: 0,
+          totalTools: 0,
+          servers: options.servers.map((server) => ({
             name: server.name,
             type: server.type,
             enabled: server.enabled !== false,
-            connected: conn?.connected ?? false,
-            toolCount: conn?.tools?.length ?? 0,
-            error: conn?.lastError?.message,
-          };
-        }),
-      };
+            connected: false,
+            toolCount: 0,
+          })),
+        };
+      }
 
       if (opts.json) {
         console.log(JSON.stringify(result, null, 2));
@@ -195,18 +267,17 @@ export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void
       }
 
       console.log("=== OpenClaw MCP Tools ===");
-      console.log(`  configured: ${result.configured}, connected: ${result.connected}, tools: ${totalTools}`);
+      console.log(`  configured: ${result.configured}, connected: ${result.connected}, tools: ${result.totalTools}`);
       console.log("");
 
-      if (connectedServers.length > 0) {
-        for (const [serverName, conn] of connections) {
-          if (!conn.connected) continue;
-          const toolNames = conn.tools.map((t: { registeredName: string }) => t.registeredName).join(", ");
-          console.log(`  [\x1b[36m${serverName}\x1b[0m] (${conn.tools.length}) ${toolNames}`);
+      if (result.connected > 0) {
+        const connectedServers = result.servers.filter((s) => s.connected);
+        for (const server of connectedServers) {
+          console.log(`  [\x1b[36m${server.name}\x1b[0m] (${server.toolCount} tools)`);
         }
       }
 
-      const pendingServers = enabledServers.filter((s) => !connections.get(s.name)?.connected);
+      const pendingServers = result.servers.filter((s) => s.enabled && !s.connected);
       if (pendingServers.length > 0) {
         const pending = pendingServers.map((s) => s.name).join(", ");
         console.log(`  pending: ${pending}`);
