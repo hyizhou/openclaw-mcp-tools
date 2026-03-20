@@ -109,7 +109,6 @@ async function main() {
   // Register MCP CLI commands
   const cliOptions: McpCliOptions = {
     servers: config.servers,
-    config,
     getClientManager: () => clientManager,
   };
 

@@ -1,6 +1,6 @@
 {
   "name": "openclaw-mcp-tools",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "OpenClaw plugin to bridge MCP server tools as native OpenClaw tools",
   "author": "hyizhou",
   "license": "MIT",

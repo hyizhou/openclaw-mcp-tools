@@ -34,7 +34,7 @@ In short: **mcporter teaches AI to use a hammer, this plugin puts the hammer dir
 
 ## CLI Commands
 
-OpenClaw MCP Tools provides CLI commands to manage MCP servers:
+OpenClaw MCP Tools provides CLI commands to view MCP server status:
 
 ```bash
 openclaw mcp <command> [options]
@@ -44,13 +44,8 @@ openclaw mcp <command> [options]
 
 | Command | Description |
 |---------|-------------|
-| `list` | List configured MCP servers |
+| `list` | List configured MCP servers and connection status |
 | `tools` | List available MCP tools from connected servers |
-| `status` | Show MCP connection status and statistics |
-| `call <server> <tool> [args]` | Call an MCP tool with JSON arguments |
-| `connect <server>` | Connect to a configured MCP server |
-| `disconnect <server>` | Disconnect from an MCP server |
-| `reload [server]` | Reload MCP server connections |
 
 ### Examples
 
@@ -61,21 +56,10 @@ openclaw mcp list
 # List with JSON output
 openclaw mcp list --json
 
-# Show connection status
-openclaw mcp status
-
 # List available tools
 openclaw mcp tools
 openclaw mcp tools --server github
-
-# Call a tool
-openclaw mcp call github search_repositories '{"query": "mcp"}'
-
-# Manage connections
-openclaw mcp connect github
-openclaw mcp disconnect github
-openclaw mcp reload github
-openclaw mcp reload  # Reload all servers
+openclaw mcp tools --json
 ```
 
 ### Standalone Testing
@@ -89,14 +73,14 @@ cp standalone-test-config.example.json standalone-test-config.json
 # Edit config as needed, then run
 npx tsx src/cli.ts mcp --help
 npx tsx src/cli.ts mcp list
-npx tsx src/cli.ts mcp status --json
+npx tsx src/cli.ts mcp tools
 ```
 
 Or use environment variable:
 
 ```bash
 MCP_SERVERS='[{"name":"test","type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/tmp"]}]' \
-npx tsx src/cli.ts mcp status
+npx tsx src/cli.ts mcp list
 ```
 
 ## Installation

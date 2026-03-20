@@ -158,11 +158,7 @@ const mcpToolBridgePlugin = {
     // Register CLI commands for MCP management
     api.registerCli(
       (cliCtx) => {
-        registerMcpCli(cliCtx, {
-          servers: config.servers,
-          config,
-          getClientManager: () => clientManager,
-        });
+        registerMcpCli(cliCtx, { servers: config.servers });
       },
       { commands: ["mcp"] }
     );
@@ -321,33 +317,6 @@ function registerGatewayHandlers(
       }
     }
     opts.respond(true, tools);
-  });
-
-  // mcp.status - Show connection statistics
-  handler("mcp.status", (opts) => {
-    const connections = clientManager?.getConnections() ?? new Map();
-    const enabledServers = config.servers.filter((s) => s.enabled !== false);
-    const connectedServers = Array.from(connections.values()).filter((c) => c.connected);
-    const totalTools = connectedServers.reduce((sum, c) => sum + c.tools.length, 0);
-
-    const result = {
-      configured: config.servers.length,
-      enabled: enabledServers.length,
-      connected: connectedServers.length,
-      totalTools,
-      servers: config.servers.map((server) => {
-        const conn = connections.get(server.name);
-        return {
-          name: server.name,
-          type: server.type,
-          enabled: server.enabled !== false,
-          connected: conn?.connected ?? false,
-          toolCount: conn?.tools?.length ?? 0,
-          error: conn?.lastError?.message,
-        };
-      }),
-    };
-    opts.respond(true, result);
   });
 }
 
