@@ -54,9 +54,14 @@ function extractJsonFromOutput(stdout: string): Record<string, unknown> {
   throw new Error(`No valid JSON found in gateway output`);
 }
 
-function callGatewayMethod(method: string): Promise<Record<string, unknown>> {
+function callGatewayMethod(method: string, params?: Record<string, unknown>): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
-    const args = ["gateway", "call", method, "--timeout", "10000", "--json"];
+    const args = [
+      "gateway", "call", method,
+      "--timeout", "10000",
+      "--json",
+      "--params", JSON.stringify(params ?? {}),
+    ];
     execFile("openclaw", args, (error, stdout, stderr) => {
       if (error) {
         reject(new Error(stderr?.trim() || error.message));
@@ -155,8 +160,9 @@ export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void
       let tools: Array<{ name: string; server: string; originalName: string }>;
 
       try {
-        const params = opts.server ? `{"server":"${opts.server}"}` : "{}";
-        tools = await callGatewayMethod(`mcp.tools?params=${encodeURIComponent(params)}`) as unknown as typeof tools;
+        const params: Record<string, unknown> = {};
+        if (opts.server) params.server = opts.server;
+        tools = await callGatewayMethod("mcp.tools", params) as unknown as typeof tools;
       } catch (e) {
         console.error(`Gateway unavailable: ${(e as Error).message}`);
         tools = [];
