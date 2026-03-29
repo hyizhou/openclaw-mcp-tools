@@ -17,3 +17,5 @@ test-standalone.ts
 TODO.md
 *.log
 .DS_Store
+
+CLAUDE.md

@@ -5,7 +5,8 @@
  * Enables direct AI invocation without skill or mcporter intermediaries.
  */
 
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { Type } from "@sinclair/typebox";
 import { McpClientManager } from "./mcp-client.js";
 import { ToolRegistry } from "./tool-registry.js";
 import { registerMcpCli } from "./mcp-cli.js";
@@ -74,10 +75,32 @@ let initPromise: Promise<void> | null = null;
 // Plugin Definition
 // ============================================================================
 
-const mcpToolBridgePlugin = {
+export default definePluginEntry({
   id: "openclaw-mcp-tools",
   name: "MCP Tool Bridge",
   description: "Bridges MCP server tools as native OpenClaw tools for direct AI invocation",
+
+  configSchema: Type.Object({
+    servers: Type.Array(Type.Object({
+      name: Type.String(),
+      type: Type.Union([
+        Type.Literal("stdio"),
+        Type.Literal("sse"),
+        Type.Literal("streamableHttp"),
+      ]),
+      command: Type.Optional(Type.String()),
+      args: Type.Optional(Type.Array(Type.String())),
+      env: Type.Optional(Type.Record(Type.String(), Type.String())),
+      url: Type.Optional(Type.String()),
+      headers: Type.Optional(Type.Record(Type.String(), Type.String())),
+      enabled: Type.Optional(Type.Boolean()),
+      toolPrefix: Type.Optional(Type.String()),
+      toolFilter: Type.Optional(Type.Array(Type.String())),
+    })),
+    autoReconnect: Type.Optional(Type.Boolean()),
+    reconnectDelayMs: Type.Optional(Type.Number()),
+    toolCallTimeoutMs: Type.Optional(Type.Number()),
+  }),
 
   register(api: OpenClawPluginApi) {
     // Parse configuration
@@ -166,11 +189,7 @@ const mcpToolBridgePlugin = {
     // Register Gateway methods for CLI to query main process state
     registerGatewayHandlers(api, config);
   },
-};
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
+});
 
 /**
  * Connect to all enabled MCP servers
@@ -319,5 +338,3 @@ function registerGatewayHandlers(
     opts.respond(true, tools);
   });
 }
-
-export default mcpToolBridgePlugin;

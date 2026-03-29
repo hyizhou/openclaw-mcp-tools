@@ -2,12 +2,18 @@
  * OpenClaw Plugin SDK Type Declarations
  *
  * These types are provided by OpenClaw at runtime.
- * This file is for development-time type checking.
+ * This file is for development-time type checking when building standalone.
  */
 
-declare module "openclaw/plugin-sdk" {
+// ============================================================================
+// Plugin Entry Module
+// ============================================================================
+
+declare module "openclaw/plugin-sdk/plugin-entry" {
+  import type { Static, TSchema } from "@sinclair/typebox";
+
   // ============================================================================
-  // Logger
+  // Common Types
   // ============================================================================
 
   export interface PluginLogger {
@@ -16,10 +22,6 @@ declare module "openclaw/plugin-sdk" {
     warn: (message: string) => void;
     error: (message: string) => void;
   }
-
-  // ============================================================================
-  // Tool Types
-  // ============================================================================
 
   export interface OpenClawToolInputSchema {
     type: "object";
@@ -34,7 +36,12 @@ declare module "openclaw/plugin-sdk" {
     label?: string;
     description: string;
     parameters: OpenClawToolInputSchema | Record<string, unknown>;
-    execute: (toolCallId: string, args: Record<string, unknown>, signal: AbortSignal | undefined, onUpdate: unknown) => Promise<OpenClawToolResult>;
+    execute: (
+      toolCallId: string,
+      args: Record<string, unknown>,
+      signal: AbortSignal | undefined,
+      onUpdate: unknown
+    ) => Promise<OpenClawToolResult>;
   }
 
   export interface OpenClawToolContext {
@@ -62,10 +69,6 @@ declare module "openclaw/plugin-sdk" {
     details?: Record<string, unknown>;
   }
 
-  // ============================================================================
-  // Service Types
-  // ============================================================================
-
   export interface OpenClawServiceContext {
     config: unknown;
     stateDir: string;
@@ -77,10 +80,6 @@ declare module "openclaw/plugin-sdk" {
     start: (ctx: OpenClawServiceContext) => void | Promise<void>;
     stop?: (ctx: OpenClawServiceContext) => void | Promise<void>;
   }
-
-  // ============================================================================
-  // Hook Types
-  // ============================================================================
 
   export type PluginHookName =
     | "before_model_resolve"
@@ -129,6 +128,7 @@ declare module "openclaw/plugin-sdk" {
     version?: string;
     description?: string;
     source: string;
+    rootDir?: string;
 
     // Configuration
     config: unknown;
@@ -137,9 +137,15 @@ declare module "openclaw/plugin-sdk" {
     // Runtime
     logger: PluginLogger;
     resolvePath: (input: string) => string;
+    registrationMode?: "full" | "setup-only" | "setup-runtime";
 
     // Tool registration
-    registerTool: (tool: OpenClawToolDefinition, options?: { optional?: boolean }) => void;
+    registerTool: (
+      tool:
+        | OpenClawToolDefinition
+        | ((context: OpenClawToolContext) => OpenClawToolDefinition[] | undefined),
+      options?: { optional?: boolean }
+    ) => void;
 
     // Service registration
     registerService: (service: OpenClawServiceDefinition) => void;
@@ -175,18 +181,40 @@ declare module "openclaw/plugin-sdk" {
   }
 
   // ============================================================================
-  // Plugin Definition
+  // Plugin Entry Types (for definePluginEntry)
   // ============================================================================
 
-  export interface OpenClawPluginDefinition {
+  export interface OpenClawPluginConfigSchema extends TSchema {
+    type: "object";
+    properties?: Record<string, TSchema>;
+    required?: string[];
+    additionalProperties?: boolean | TSchema;
+  }
+
+  export interface OpenClawPluginEntry<
+    TConfig extends OpenClawPluginConfigSchema = OpenClawPluginConfigSchema
+  > {
     id: string;
     name: string;
     description?: string;
     version?: string;
     kind?: "memory" | "context-engine";
+    configSchema?: TConfig | (() => TConfig);
     register: (api: OpenClawPluginApi) => void | Promise<void>;
   }
 
-  const OpenClawPluginDefinition: OpenClawPluginDefinition;
-  export default OpenClawPluginDefinition;
+  /**
+   * Define a plugin entry point (new SDK style)
+   */
+  export function definePluginEntry<
+    TConfig extends OpenClawPluginConfigSchema = OpenClawPluginConfigSchema
+  >(entry: OpenClawPluginEntry<TConfig>): OpenClawPluginEntry<TConfig>;
+}
+
+// ============================================================================
+// Legacy Module (deprecated but kept for backwards compatibility)
+// ============================================================================
+
+declare module "openclaw/plugin-sdk" {
+  export * from "openclaw/plugin-sdk/plugin-entry";
 }
