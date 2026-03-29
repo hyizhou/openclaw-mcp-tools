@@ -112,6 +112,18 @@ export default definePluginEntry({
       toolCallTimeoutMs: (rawConfig.toolCallTimeoutMs as number | undefined) ?? DEFAULT_CONFIG.toolCallTimeoutMs,
     };
 
+    // Register CLI commands and Gateway methods regardless of whether
+    // servers are configured, so that the CLI always works and can
+    // report "no servers configured" instead of "unknown command".
+    api.registerCli(
+      (cliCtx) => {
+        registerMcpCli(cliCtx, { servers: config.servers });
+      },
+      { commands: ["mcp-tools"] }
+    );
+
+    registerGatewayHandlers(api, config);
+
     if (config.servers.length === 0) {
       api.logger.warn("openclaw-mcp-tools: no MCP servers configured");
       return;
@@ -177,17 +189,6 @@ export default definePluginEntry({
         }
       },
     });
-
-    // Register CLI commands for MCP management
-    api.registerCli(
-      (cliCtx) => {
-        registerMcpCli(cliCtx, { servers: config.servers });
-      },
-      { commands: ["mcp-tools"] }
-    );
-
-    // Register Gateway methods for CLI to query main process state
-    registerGatewayHandlers(api, config);
   },
 });
 
