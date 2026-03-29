@@ -1,8 +1,12 @@
 # OpenClaw MCP Tools
 
+> **提示：** OpenClaw `2026.3.22` 及以上版本已内置原生 MCP 支持，无需安装本插件。直接通过 `openclaw mcp set` 命令或在 `~/.openclaw/openclaw.json` 中配置 MCP 服务器即可。本插件仅适用于 `2026.3.22` 之前的版本。
+
 [![npm version](https://img.shields.io/npm/v/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm license](https://img.shields.io/npm/l/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm downloads](https://img.shields.io/npm/dt/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools)
 
 将 MCP 服务器的工具直接注册为 OpenClaw 原生工具，AI 无需通过 CLI 即可调用。
+
+> **版本兼容性：** `2.0.0` 适用于 OpenClaw **2026.3.22** 及以上版本（新版插件 SDK）。更早的 OpenClaw 版本请使用 `1.x`。
 
 ## 为什么不用官方的 mcporter？
 

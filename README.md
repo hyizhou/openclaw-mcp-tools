@@ -1,10 +1,14 @@
 # OpenClaw MCP Tools
 
+> **Notice:** OpenClaw `2026.3.22` and later have built-in native MCP support. If you are using these versions, you do not need this plugin — simply configure MCP servers via `openclaw mcp set` or in `~/.openclaw/openclaw.json`. This plugin is only needed for OpenClaw versions prior to `2026.3.22`.
+
 [中文文档](./README-zh.md)
 
 [![npm version](https://img.shields.io/npm/v/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm license](https://img.shields.io/npm/l/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm downloads](https://img.shields.io/npm/dt/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools)
 
 Bridge MCP server tools as native OpenClaw tools. AI agents can call them directly without CLI.
+
+> **Version compatibility:** `2.0.0` requires OpenClaw **2026.3.22** or later (new plugin SDK). For earlier OpenClaw versions, use `1.x`.
 
 ## Why not the official mcporter?
 
