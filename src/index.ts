@@ -183,7 +183,7 @@ export default definePluginEntry({
       (cliCtx) => {
         registerMcpCli(cliCtx, { servers: config.servers });
       },
-      { commands: ["mcp"] }
+      { commands: ["mcp-tools"] }
     );
 
     // Register Gateway methods for CLI to query main process state

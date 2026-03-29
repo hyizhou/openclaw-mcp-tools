@@ -1,6 +1,6 @@
 # OpenClaw MCP Tools
 
-> **Notice:** OpenClaw `2026.3.22` and later have built-in native MCP support. If you are using these versions, you do not need this plugin — simply configure MCP servers via `openclaw mcp set` or in `~/.openclaw/openclaw.json`. This plugin is only needed for OpenClaw versions prior to `2026.3.22`.
+> **Notice:** OpenClaw `2026.3.22` and later have built-in native MCP support. If you are using these versions, you do not need this plugin — simply configure MCP servers via `openclaw mcp set` or in `~/.openclaw/openclaw.json`. For OpenClaw versions prior to `2026.3.22`, this plugin is recommended as it provides MCP tool bridging that is not available natively.
 
 [中文文档](./README-zh.md)
 
@@ -40,8 +40,10 @@ In short: **mcporter teaches AI to use a hammer, this plugin puts the hammer dir
 
 OpenClaw MCP Tools provides CLI commands to view MCP server status:
 
+> **v2.0.0** renamed the command from `mcp` to `mcp-tools` to avoid conflicts with OpenClaw's built-in `mcp` command. If you are using **v1.x**, replace `mcp-tools` with `mcp` in all commands below.
+
 ```bash
-openclaw mcp <command> [options]
+openclaw mcp-tools <command> [options]
 ```
 
 ### Available Commands
@@ -55,15 +57,15 @@ openclaw mcp <command> [options]
 
 ```bash
 # List all configured servers
-openclaw mcp list
+openclaw mcp-tools list
 
 # List with JSON output
-openclaw mcp list --json
+openclaw mcp-tools list --json
 
 # List available tools
-openclaw mcp tools
-openclaw mcp tools --server github
-openclaw mcp tools --json
+openclaw mcp-tools tools
+openclaw mcp-tools tools --server github
+openclaw mcp-tools tools --json
 ```
 
 ### Standalone Testing
@@ -75,16 +77,16 @@ You can test CLI commands without installing into OpenClaw:
 cp standalone-test-config.example.json standalone-test-config.json
 
 # Edit config as needed, then run
-npx tsx src/cli.ts mcp --help
-npx tsx src/cli.ts mcp list
-npx tsx src/cli.ts mcp tools
+npx tsx src/cli.ts mcp-tools --help
+npx tsx src/cli.ts mcp-tools list
+npx tsx src/cli.ts mcp-tools tools
 ```
 
 Or use environment variable:
 
 ```bash
 MCP_SERVERS='[{"name":"test","type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/tmp"]}]' \
-npx tsx src/cli.ts mcp list
+npx tsx src/cli.ts mcp-tools list
 ```
 
 ## Installation

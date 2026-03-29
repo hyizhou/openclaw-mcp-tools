@@ -1,6 +1,6 @@
 # OpenClaw MCP Tools
 
-> **提示：** OpenClaw `2026.3.22` 及以上版本已内置原生 MCP 支持，无需安装本插件。直接通过 `openclaw mcp set` 命令或在 `~/.openclaw/openclaw.json` 中配置 MCP 服务器即可。本插件仅适用于 `2026.3.22` 之前的版本。
+> **提示：** OpenClaw `2026.3.22` 及以上版本已内置原生 MCP 支持，无需安装本插件。直接通过 `openclaw mcp set` 命令或在 `~/.openclaw/openclaw.json` 中配置 MCP 服务器即可。对于 `2026.3.22` 之前的版本，推荐使用本插件以获得 MCP 工具桥接能力。
 
 [![npm version](https://img.shields.io/npm/v/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm license](https://img.shields.io/npm/l/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools) [![npm downloads](https://img.shields.io/npm/dt/openclaw-mcp-tools)](https://www.npmjs.com/package/openclaw-mcp-tools)
 
@@ -38,8 +38,10 @@ OpenClaw 官方通过 [mcporter](https://mcporter.dev) skill 支持 MCP，但他
 
 OpenClaw MCP Tools 提供 CLI 命令查看 MCP 服务器状态：
 
+> **v2.0.0** 将命令从 `mcp` 重命名为 `mcp-tools`，以避免与 OpenClaw 内置的 `mcp` 命令冲突。如果你使用的是 **v1.x**，请将下方所有命令中的 `mcp-tools` 替换为 `mcp`。
+
 ```bash
-openclaw mcp <command> [options]
+openclaw mcp-tools <command> [options]
 ```
 
 ### 可用命令
@@ -53,15 +55,15 @@ openclaw mcp <command> [options]
 
 ```bash
 # 列出所有配置的服务器
-openclaw mcp list
+openclaw mcp-tools list
 
 # JSON 格式输出
-openclaw mcp list --json
+openclaw mcp-tools list --json
 
 # 列出可用工具
-openclaw mcp tools
-openclaw mcp tools --server github
-openclaw mcp tools --json
+openclaw mcp-tools tools
+openclaw mcp-tools tools --server github
+openclaw mcp-tools tools --json
 ```
 
 ### 独立测试
@@ -73,16 +75,16 @@ openclaw mcp tools --json
 cp standalone-test-config.example.json standalone-test-config.json
 
 # 运行命令
-npx tsx src/cli.ts mcp --help
-npx tsx src/cli.ts mcp list
-npx tsx src/cli.ts mcp tools
+npx tsx src/cli.ts mcp-tools --help
+npx tsx src/cli.ts mcp-tools list
+npx tsx src/cli.ts mcp-tools tools
 ```
 
 或使用环境变量：
 
 ```bash
 MCP_SERVERS='[{"name":"test","type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/tmp"]}]' \
-npx tsx src/cli.ts mcp list
+npx tsx src/cli.ts mcp-tools list
 ```
 
 ## 安装

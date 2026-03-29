@@ -109,8 +109,8 @@ function formatServerStatus(server: ServerStatus): void {
  */
 export function registerMcpCli(ctx: McpCliContext, options: McpCliOptions): void {
   const mcp = ctx.program
-    .command("mcp")
-    .description("View MCP server connections and tools");
+    .command("mcp-tools")
+    .description("View MCP server connections and tools (openclaw-mcp-tools plugin)");
 
   // mcp list - List configured MCP servers
   mcp
