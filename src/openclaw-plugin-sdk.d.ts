@@ -46,13 +46,16 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
 
   export interface OpenClawToolContext {
     config?: unknown;
+    runtimeConfig?: unknown;
     workspaceDir?: string;
     agentDir?: string;
     agentId?: string;
     sessionKey?: string;
     sessionId?: string;
+    browser?: { sandboxBridgeUrl?: string; allowHostControl?: boolean };
     messageChannel?: string;
     agentAccountId?: string;
+    deliveryContext?: unknown;
     requesterSenderId?: string;
     senderIsOwner?: boolean;
     sandboxed?: boolean;
@@ -85,12 +88,14 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     | "before_model_resolve"
     | "before_prompt_build"
     | "before_agent_start"
+    | "before_agent_reply"
     | "llm_input"
     | "llm_output"
     | "agent_end"
     | "before_compaction"
     | "after_compaction"
     | "before_reset"
+    | "inbound_claim"
     | "message_received"
     | "message_sending"
     | "message_sent"
@@ -105,7 +110,9 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     | "subagent_spawned"
     | "subagent_ended"
     | "gateway_start"
-    | "gateway_stop";
+    | "gateway_stop"
+    | "before_dispatch"
+    | "before_install";
 
   export interface PluginHookContext {
     agentId?: string;
@@ -113,8 +120,25 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     sessionId?: string;
     workspaceDir?: string;
     messageProvider?: string;
-    trigger?: "user" | "heartbeat" | "cron" | "memory";
+    trigger?: string;
     channelId?: string;
+  }
+
+  // ============================================================================
+  // Plugin Runtime
+  // ============================================================================
+
+  export interface PluginRuntimeSubagent {
+    run: (params: unknown) => Promise<unknown>;
+    waitForRun: (params: unknown) => Promise<unknown>;
+    getSessionMessages: (params: unknown) => Promise<unknown>;
+    deleteSession: (params: unknown) => Promise<void>;
+  }
+
+  export interface PluginRuntime {
+    subagent: PluginRuntimeSubagent;
+    channel: unknown;
+    [key: string]: unknown;
   }
 
   // ============================================================================
@@ -135,16 +159,17 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     pluginConfig?: Record<string, unknown>;
 
     // Runtime
+    runtime: PluginRuntime;
     logger: PluginLogger;
     resolvePath: (input: string) => string;
-    registrationMode?: "full" | "setup-only" | "setup-runtime";
+    registrationMode: "full" | "setup-only" | "setup-runtime" | "cli-metadata";
 
     // Tool registration
     registerTool: (
       tool:
         | OpenClawToolDefinition
         | ((context: OpenClawToolContext) => OpenClawToolDefinition[] | undefined),
-      options?: { optional?: boolean }
+      options?: { name?: string; names?: string[]; optional?: boolean }
     ) => void;
 
     // Service registration
@@ -159,13 +184,17 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     registerHook: (
       hookNames: PluginHookName | PluginHookName[],
       handler: (event: unknown, context: PluginHookContext) => Promise<unknown> | unknown,
-      options?: { name?: string }
+      options?: { name?: string; description?: string; register?: boolean }
     ) => void;
 
-    // Other registration methods
+    // Registration methods
     registerHttpRoute: (route: unknown) => void;
     registerChannel: (channel: unknown) => void;
-    registerGatewayMethod: (name: string, handler: unknown) => void;
+    registerGatewayMethod: (
+      name: string,
+      handler: unknown,
+      opts?: { scope?: string },
+    ) => void;
     registerCli: (
       registrar: (ctx: {
         program: import("commander").Command;
@@ -173,11 +202,23 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
         workspaceDir?: string;
         logger: PluginLogger;
       }) => void | Promise<void>,
-      opts?: { commands?: string[] }
+      opts?: { commands?: string[]; descriptors?: unknown[] }
     ) => void;
+    registerCliBackend: (backend: unknown) => void;
     registerProvider: (provider: unknown) => void;
+    registerSpeechProvider: (provider: unknown) => void;
+    registerMediaUnderstandingProvider: (provider: unknown) => void;
+    registerImageGenerationProvider: (provider: unknown) => void;
+    registerWebFetchProvider: (provider: unknown) => void;
+    registerWebSearchProvider: (provider: unknown) => void;
+    registerInteractiveHandler: (registration: unknown) => void;
     registerCommand: (command: unknown) => void;
     registerContextEngine: (name: string, factory: unknown) => void;
+    onConversationBindingResolved: (handler: (event: unknown) => void | Promise<void>) => void;
+    registerMemoryPromptSection: (builder: unknown) => void;
+    registerMemoryFlushPlan: (resolver: unknown) => void;
+    registerMemoryRuntime: (runtime: unknown) => void;
+    registerMemoryEmbeddingProvider: (adapter: unknown) => void;
   }
 
   // ============================================================================
